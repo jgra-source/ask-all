@@ -113,7 +113,7 @@ def sections(text):
 def parse_answer(r):
     text = r.get("text") or ""
     warning = None
-    if text.startswith("WARNING: Gemini used tools"):          # set by adapters/agy.py
+    if re.match(r"WARNING: \w+ used tools", text):              # set by adapters/agy.py and codex.py
         warning, _, text = text.partition("\n\n")
     lab = labels(text) if r.get("status") == "ok" else {}
     pre, secs = sections(text) if r.get("status") == "ok" else ("", [])

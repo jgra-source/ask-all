@@ -30,8 +30,10 @@ Two make the comparison work; one still gives you the structured answer.
 | --- | --- | --- | --- |
 | Claude | `npm install -g @anthropic-ai/claude-code` | run `claude` once | your Claude subscription |
 | Gemini | Antigravity CLI from [antigravity.google/download](https://antigravity.google/download) (Windows: `irm https://antigravity.google/cli/install.ps1 \| iex`) | run `agy` once, Google sign-in | free tier |
+| Codex (OpenAI) | `npm install -g @openai/codex`, then set `enabled = true` for `codex` in `models.toml` | run `codex` once, ChatGPT sign-in | free ChatGPT account works (small allowance); paid plans get more |
 
-Any other command-line AI works too; see [Add a model](#add-a-model).
+Claude and Gemini are switched on by default. Codex is switched off, and **untested**:
+see [Codex](#codex). Any other command-line AI works too; see [Add a model](#add-a-model).
 
 **2. Get the code.** You need Python 3.11+ and nothing else from pip.
 
@@ -128,9 +130,29 @@ enabled = true
 command = ["ollama", "run", "llama3.1"]
 ```
 
-`models.toml` ships with Codex and a local Ollama model as switched-off examples (not
-tested). A tool that can't meet the contract gets a small translator script in
-`adapters/`; `adapters/agy.py` is the one for Antigravity.
+`models.toml` also ships a local Ollama model as a switched-off example (not tested).
+A tool that can't meet the contract safely gets a small translator script in
+`adapters/`: `adapters/agy.py` for Antigravity, `adapters/codex.py` for Codex.
+
+## Codex
+
+Codex support is **written but untested against a real Codex install**. It was built
+from Codex's source code (CLI 0.158.0), and its event handling is unit-tested on sample
+events in that format (`tests/test_codex_adapter.py`). To switch it on:
+
+1. `npm install -g @openai/codex` (about 430 MB on Windows), then run `codex` once and
+   sign in with your ChatGPT account.
+2. In `models.toml`, set `enabled = true` under `name = "codex"`.
+3. Run `python check_setup.py`. It sends Codex a test question.
+4. Read the first real answer yourself, including any WARNING at its top.
+
+Why it goes through an adapter: Codex can run commands and **read files even in its
+read-only sandbox**, which is more than the Claude and Gemini set-ups allow.
+`adapters/codex.py` runs it with the user's own Codex settings and connected apps
+ignored (`--ignore-user-config`), web search off, no file writes, and nothing saved.
+It then reads Codex's event stream and puts a WARNING at the top of any answer where
+Codex ran a command, touched a file, called a tool or searched. You see it; it is never
+silently dropped.
 
 ## Add a task
 
@@ -151,6 +173,8 @@ the safety rules. Start the answer format with `VERDICT:` and `WHY:` lines and f
   `--tools ""` alone was NOT enough: it left every connected app (mail, Drive, Slack,
   Zapier) callable. Antigravity refuses file reads and web page opens automatically in
   headless mode. It can still run a web search, and the answer is flagged when it does.
+  Codex (off by default) can run read-only commands, so any it runs are flagged; see
+  [Codex](#codex).
 - **Pasted text is data, not orders.** Every task tells the models to ignore
   instructions inside the input and quote them under "Suspicious instructions in the
   input"; the page turns that into a red banner. Tested with a planted "ignore all
@@ -194,6 +218,7 @@ GitHub Actions runs them on every push (`.github/workflows/tests.yml`).
 | `tasks/` | The three tasks, plus the comparison, follow-up and safety rules |
 | `profile.example/` | A fictional person's profile to copy |
 | `adapters/agy.py` | Makes Antigravity CLI meet the model contract |
+| `adapters/codex.py` | Makes Codex CLI meet it, and flags any command or tool it uses (untested with a real install) |
 | `web/` | The page server (Python standard library) and the page (no framework, no build step) |
 | `check_setup.py` | The setup checker |
 | `scripts/` | Optional Windows shortcuts installer and uninstaller |

@@ -39,11 +39,18 @@ enabled = true
 command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "gemini-3.1-pro-high"]
 
 # Group: examples you can switch on later (enabled = false: NOT tested on this machine)
+# Codex (OpenAI Codex CLI), on your ChatGPT sign-in; a free ChatGPT account works, with
+# a small allowance (rolling 5-hour window plus a weekly cap).
+# OFF and UNTESTED: written from Codex's source (CLI 0.158.0) without a real install.
+# To use it: npm install -g @openai/codex, run `codex` once to sign in, set enabled =
+# true, run `python check_setup.py`, then check the first answer by hand.
+# Codex can run commands and read files even in its read-only sandbox, so it goes
+# through adapters/codex.py, which turns off its connected apps and web search and puts a
+# WARNING on any answer where it ran a command, read a file or used a tool.
 [[model]]
 name = "codex"
 enabled = false
-# OpenAI Codex CLI; "-" means read the prompt from stdin. Needs a ChatGPT sign-in.
-command = ["codex", "exec", "-"]
+command = ["{PYTHON}", "{HERE}/adapters/codex.py"]
 
 [[model]]
 name = "local-llama"

@@ -11,6 +11,7 @@ is in use, git (only needed to review a project folder), and the page server.
 Read-only: it installs nothing and changes nothing. Exit code 0 = nothing blocking.
 """
 import argparse
+import os
 import shutil
 import sys
 import tempfile
@@ -26,7 +27,12 @@ HINTS = {
     "gemini": "Install Antigravity CLI from https://antigravity.google/download\n"
               "         (Windows PowerShell:  irm https://antigravity.google/cli/install.ps1 | iex)\n"
               "         then run  agy  once and sign in with your Google account.",
+    "codex": "Install Codex CLI:  npm install -g @openai/codex\n"
+             "         then run  codex  once and sign in with your ChatGPT account (free works, small allowance).",
 }
+# Block: models that go through an adapter: the command is Python, so "installed" means
+# the tool the adapter calls is on PATH (otherwise every adapter model would look installed)
+ADAPTER_NEEDS = {"agy.py": "agy", "codex.py": "codex"}
 results = []
 
 
@@ -68,8 +74,13 @@ def main():
     workdir = tempfile.mkdtemp(prefix="ask-all-check-")
     for m in models:
         exe = m["command"][0].replace("{PYTHON}", sys.executable)
+        adapter = next((a for a in ADAPTER_NEEDS if any(a in part for part in m["command"])), None)
+        if adapter:
+            exe = ADAPTER_NEEDS[adapter]
         hint = HINTS.get(m["name"], "Check the command for this model in models.toml.")
-        if not shutil.which(exe):
+        # agy's installer puts it in %LOCALAPPDATA%\agy\bin, which a fresh shell may not have on PATH
+        local_agy = os.path.join(os.environ.get("LOCALAPPDATA", ""), "agy", "bin", "agy.exe")
+        if not shutil.which(exe) and not (exe == "agy" and os.path.exists(local_agy)):
             report("FAIL", f"{m['name']}", f"'{exe}' is not installed or not on PATH", hint)
             continue
         if args.no_ping:
