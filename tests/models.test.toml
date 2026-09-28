@@ -1,0 +1,20 @@
+# models.test.toml — the model list the tests use (via ASK_ALL_CONFIG), in place of
+# models.toml. Two pretend AIs that always answer, and one that always fails (off by
+# default, named explicitly by the test that needs it). {HERE} is the ask-all folder.
+
+[settings]
+compare_with = "fake-a"
+timeout_seconds = 60
+
+[[model]]
+name = "fake-a"
+command = ["{PYTHON}", "{HERE}/tests/fake_model.py", "--name", "a", "--verdict", "Bid"]
+
+[[model]]
+name = "fake-b"
+command = ["{PYTHON}", "{HERE}/tests/fake_model.py", "--name", "b", "--verdict", "Bid with care"]
+
+[[model]]
+name = "fake-broken"
+enabled = false
+command = ["{PYTHON}", "{HERE}/tests/fake_model.py", "--fail"]

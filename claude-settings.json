@@ -1,0 +1,4 @@
+{
+  "_comment": "Settings ask-all passes to `claude -p`. disableAllHooks stops the workspace memory hook injecting context only Claude would see, so Claude and Gemini answer from the same prompt.",
+  "disableAllHooks": true
+}

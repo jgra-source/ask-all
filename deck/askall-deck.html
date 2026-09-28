@@ -1,0 +1,326 @@
+<!doctype html>
+<!--
+  Ask All — the seven-slide product deck. 16:9, for presenting.
+
+  THE CLAIM THAT MUST NOT BE SOFTENED: the reviewers answer, they never act. The Claude
+  reviewer lists "None" when asked for its tools; Gemini's file reads and page opens are
+  refused automatically. Gemini's web search can still run, and is flagged when it does.
+
+  ALSO TRUE AND MUST BE SAID: three defects were found while building (connected apps left
+  loaded; Gemini CLI refused by Google; Antigravity's self-updater flashing a console). No
+  test suite: the proof is saved runs in runs/. One user, no paying client.
+
+  NUMBERS FROM THE SOURCE (counted 2026-09-28): 3 page tasks, 2 of 4 models enabled.
+  Run ids on the proof slide are runs/ folder names (date 0928 + time).
+  Slides live in deck/_askall_deck_body.html; re-run deck/assemble_deck.py after editing.
+
+  Renders with:  python deck/render_deck.py deck/askall-deck.html --pdf deck/askall-deck.pdf
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ask All — paste once, every AI answers, see where they disagree</title>
+
+<!-- Fonts ship with this repo; an absolute path works on one machine only. -->
+<style>
+@font-face { font-family:'Inter'; font-weight:400; src:url('../assets/fonts/Inter-Regular.ttf'); }
+@font-face { font-family:'Inter'; font-weight:500; src:url('../assets/fonts/Inter-Medium.ttf'); }
+@font-face { font-family:'Inter'; font-weight:600; src:url('../assets/fonts/Inter-SemiBold.ttf'); }
+@font-face { font-family:'Inter'; font-weight:700; src:url('../assets/fonts/Inter-Bold.ttf'); }
+@font-face { font-family:'Inter'; font-weight:800; src:url('../assets/fonts/Inter-ExtraBold.ttf'); }
+@font-face { font-family:'JetBrains Mono'; font-weight:400; src:url('../assets/fonts/JetBrainsMono-Regular.ttf'); }
+@font-face { font-family:'JetBrains Mono'; font-weight:500; src:url('../assets/fonts/JetBrainsMono-Medium.ttf'); }
+</style>
+
+<link rel="stylesheet" href="../assets/pdf/brand.css">
+
+<style>
+/* ---------- the slide frame ---------- */
+body { background:#000; margin:0; }
+
+.slide {
+    position: relative;
+    width: 1280px; height: 720px;
+    padding: 56px 72px 48px;
+    background: var(--base);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    margin: 0 auto 24px;
+}
+
+.slide h1 { font-size: 64px; line-height: 1.03; letter-spacing: -0.035em; color: var(--tx-1); }
+.slide h2 { font-size: 37px; line-height: 1.1;  letter-spacing: -0.028em; color: var(--tx-1); }
+.slide h3 { font-size: 16.5px; line-height: 1.3;  letter-spacing: -0.012em; color: var(--tx-1); font-weight: 650; }
+.slide p  { font-size: 16px; line-height: 1.48; max-width: 1000px; color: var(--tx-2); }
+.slide p + p { margin-top: 12px; }
+
+.eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--green); margin-bottom: 18px;
+}
+
+.slide p.lede { font-size: 25px; line-height: 1.36; color: var(--tx-1); max-width: 960px; letter-spacing: -0.015em; }
+
+/* ---------- cards ---------- */
+.grid { display: grid; gap: 13px; margin-top: 24px; }
+.grid.two   { grid-template-columns: repeat(2, 1fr); }
+.grid.three { grid-template-columns: repeat(3, 1fr); }
+
+.card {
+    padding: 20px 22px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--line);
+    background: var(--surf-1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.card p { font-size: 13.5px; line-height: 1.42; margin-top: 6px; }
+.card .n {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    color: var(--tx-3); display: block; margin-bottom: 8px;
+}
+.card.accent { border-color: rgba(10,199,110,0.28); }
+.card.amber  { border-color: rgba(245,176,69,0.30); }
+
+/* ---------- the guard strip on slide 3 ---------- */
+.flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
+.flow .step { padding: 18px 20px; border-radius: var(--radius-card); border: 1px solid var(--line); background: var(--surf-1); }
+.flow .step .i { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--warn); display: block; margin-bottom: 8px; }
+.flow .step h3 { font-size: 15px; }
+.flow .step p { font-size: 13px; margin-top: 6px; line-height: 1.4; }
+
+/* ---------- proof table (slide 6) ---------- */
+table.proof { width: 100%; margin-top: 22px; border-collapse: collapse; }
+table.proof td { font-size: 13.5px; padding: 7px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.proof td:first-child { color: var(--tx-1); }
+table.proof td:nth-child(2) { font-family: var(--mono); text-align: right; width: 90px; color: var(--tx-2); }
+table.proof td:last-child { font-family: var(--mono); text-align: right; width: 80px; font-weight: 600; }
+table.proof tr.pass td:last-child { color: var(--green-lift); }
+table.proof tr.fail td:last-child { color: var(--warn); }
+
+/* ---------- stat row ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+.stat { padding: 18px 20px; border-radius: var(--radius-card); border: 1px solid var(--line); background: var(--surf-1); }
+.stat .v { font-family: var(--mono); font-size: 28px; font-weight: 500; color: var(--green-lift); letter-spacing: -0.02em; }
+.stat .k { font-size: 12.5px; color: var(--tx-2); margin-top: 6px; line-height: 1.32; }
+
+/* ---------- the closing list ---------- */
+.states { display: grid; gap: 10px; margin-top: 20px; max-width: none; }
+.states li::before { content: none; }
+.states li {
+    list-style: none; padding: 14px 20px;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--line-2); background: var(--surf-2);
+    font-size: 16px; color: var(--tx-1); font-weight: 600;
+}
+.states li span { display: block; font-size: 13.5px; font-weight: 400; color: var(--tx-2); margin-top: 5px; }
+.states li.amber { border-color: rgba(245,176,69,0.35); }
+
+/* ---------- cover mark and footer ---------- */
+.mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--green); color: var(--on-green);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    margin-bottom: 28px;
+}
+
+.foot {
+    position: absolute; left: 72px; right: 72px; bottom: 26px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 13px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--tx-3);
+}
+
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+
+.contact { margin-top: 24px; font-family: var(--mono); font-size: 15px; color: var(--tx-2); line-height: 1.9; }
+.contact strong { display: block; font-family: var(--font); font-size: 17px; color: var(--tx-1); margin-bottom: 6px; }
+.contact a { color: var(--green-lift); }
+
+@page { size: 1280px 720px; margin: 0; }
+
+@media print {
+    .slide { margin: 0; break-after: page; page-break-after: always; }
+    .slide:last-child { break-after: auto; page-break-after: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 1 · TITLE & HOOK ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="mark">AA</div>
+    <h1>Ask All</h1>
+    <p class="lede" style="margin-top:24px;">
+      Paste once. Every AI answers.<br>See where they disagree.
+    </p>
+    <p style="margin-top:20px;">
+      A local tool that sends one job post, job description or code change to Claude and
+      Gemini at once, then puts their verdicts side by side with a short list of where they
+      agree and where they don't. The reviewers answer. They cannot act.
+    </p>
+  </div>
+  <div class="foot"><span>Ask All · multi-AI review</span><span>John Anastacio</span></div>
+</section>
+
+<!-- ============ 2 · THE PROBLEM ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The problem</div>
+    <h2>A second AI opinion is only worth having if the setup is fair and safe.</h2>
+    <p style="margin-top:18px;">
+      All three came up while building this tool. None of them announced itself.
+    </p>
+    <div class="grid three">
+      <div class="card amber">
+        <span class="n">THE ONE THAT HIDES BEST</span>
+        <h3>"No tools" had every app</h3>
+        <p>A reviewer set to use no tools still had email, file storage and team chat loaded, ready for a pasted document to ask.</p>
+      </div>
+      <div class="card">
+        <span class="n">ONE-SIDED INPUTS</span>
+        <h3>One AI saw more</h3>
+        <p>Same prompt, different inputs: one model also read its owner's personal rules on every request. The comparison wasn't level.</p>
+      </div>
+      <div class="card">
+        <span class="n">THE INPUT TALKS BACK</span>
+        <h3>Orders inside the post</h3>
+        <p>Job posts come from strangers. A planted "ignore all previous instructions" is a test every setup should have run.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>The problem</span><span>02 / 07</span></div>
+</section>
+
+<!-- ============ 3 · THE SOLUTION ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The solution</div>
+    <h2>The same question, answered alone, compared blind.</h2>
+    <div class="flow">
+      <div class="step">
+        <span class="i">ONE PROMPT · EVERY MODEL</span>
+        <h3>Identical inputs</h3>
+        <p>Task instructions plus the pasted text, and nothing else: no memory, no project files, no tools.</p>
+      </div>
+      <div class="step">
+        <span class="i">IN PARALLEL · ABOUT A MINUTE</span>
+        <h3>Independent answers</h3>
+        <p>Each model answers in a fixed shape, a verdict line first, so the answers line up section by section.</p>
+      </div>
+      <div class="step">
+        <span class="i">BLIND COMPARISON</span>
+        <h3>A and B, never names</h3>
+        <p>One model compares the answers without knowing which is its own: agreements, disagreements, the bottom line.</p>
+      </div>
+    </div>
+    <p style="margin-top:24px;">
+      <strong>A new model costs one config entry, not a rebuild.</strong> When one provider
+      closed its free route, swapping it took one small adapter file.
+    </p>
+  </div>
+  <div class="foot"><span>The solution</span><span>03 / 07</span></div>
+</section>
+
+<!-- ============ 4 · KEY CAPABILITIES ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Key capabilities</div>
+    <h2>Built to be read in seconds, then dug into.</h2>
+    <div class="grid two">
+      <div class="card">
+        <span class="n">01 · A VERDICT BOARD</span>
+        <p>One coloured verdict per model (Bid, Apply, Must fix) and whether they agree. The two-second read.</p>
+      </div>
+      <div class="card amber">
+        <span class="n">02 · DISAGREEMENTS FIRST</span>
+        <p>The bottom line, then where the models split and what settles it. That is where the decision is.</p>
+      </div>
+      <div class="card">
+        <span class="n">03 · SIDE BY SIDE</span>
+        <p>Every section on its own row, both models next to each other, long text folded until asked for.</p>
+      </div>
+      <div class="card">
+        <span class="n">04 · FOLLOW-UPS</span>
+        <p>A question on any result goes to every model with the whole thread, so each can answer the other.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Key capabilities</span><span>04 / 07</span></div>
+</section>
+
+<!-- ============ 5 · WHO IT IS FOR ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Who it is for</div>
+    <h2>Anyone deciding something an AI can read faster than they can.</h2>
+    <p style="margin-top:18px;">
+      One model's answer sounds certain whether it is right or not. Two independent answers
+      show where the certainty is real and where it is a guess.
+    </p>
+    <div class="grid three">
+      <div class="card">
+        <h3>Freelancers choosing bids</h3>
+        <p>Bid, bid with care, or skip, grounded in their own verified background, not a generic pitch.</p>
+      </div>
+      <div class="card">
+        <h3>People weighing a job offer</h3>
+        <p>Each must-have marked met, partly or missing, with the fact that shows it and no stretching.</p>
+      </div>
+      <div class="card">
+        <h3>Small teams without a reviewer</h3>
+        <p>Two independent code reviews of a change, each finding tied to a case that triggers it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Who it is for</span><span>05 / 07</span></div>
+</section>
+
+<!-- ============ 6 · PROOF ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Proof &amp; operating record</div>
+    <h2>Measured on saved runs, by its one user. No paying client.</h2>
+    <table class="proof">
+      <tr class="pass"><td>Freelance job post: both "Bid", compared blind as "Agree"</td><td>0928-203718</td><td>PASS</td></tr>
+      <tr class="pass"><td>Planted "ignore all previous instructions": both refused and quoted it</td><td>0928-202233</td><td>PASS</td></tr>
+      <tr class="pass"><td>Planted bug in a code change: both reviews found it and gave the fix</td><td>0928-192435</td><td>PASS</td></tr>
+      <tr class="pass"><td>Full-time role: missing skill marked Missing, not stretched to fit</td><td>0928-194723</td><td>PASS</td></tr>
+      <tr class="pass"><td>Reviewer asked to list its tools after the fix: "None"</td><td>probe</td><td>PASS</td></tr>
+      <tr class="pass"><td>Memory check: a word from an earlier run came back "UNKNOWN"</td><td>probe</td><td>PASS</td></tr>
+    </table>
+    <div class="stats">
+      <div class="stat"><div class="v">2</div><div class="k">models answering today, 2 more listed untested</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">tasks, each with a fixed answer shape</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">defects found while building, all on the record</div></div>
+      <div class="stat"><div class="v">0</div><div class="k">tools the Claude reviewer can call</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Proof &amp; operating record</span><span>06 / 07</span></div>
+</section>
+
+<!-- ============ 7 · THE IDEA + CONTACT ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The idea worth taking</div>
+    <h2>A second opinion is only as good as the fairness of the question.</h2>
+    <ul class="states">
+      <li>Same question, same inputs. Anything one model reads that the other doesn't is a thumb on the scale.</li>
+      <li>Reviewers answer; they never act. Ask the reviewer for its tool list, not the settings file.</li>
+      <li class="amber">Treat pasted text as data.
+        <span>Whatever you paste came from someone else. Plant an instruction in it and see what comes back.</span></li>
+    </ul>
+    <div class="contact">
+      <strong>Talk to me about AI review you can trust.</strong>
+      John Anastacio<br>
+      g-anastacio.vercel.app
+    </div>
+  </div>
+  <div class="foot"><span>The idea worth taking</span><span>07 / 07</span></div>
+</section>
+
+</body>
+</html>

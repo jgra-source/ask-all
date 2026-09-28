@@ -1,0 +1,52 @@
+# models.toml — the list of AI tools ask-all sends every question to.
+#
+# This file is what makes ask-all model agnostic. Each [[model]] is just a command.
+# The contract every command must meet:
+#   1. it reads the whole prompt from STDIN
+#   2. it prints its answer to STDOUT and exits 0
+# Any command-line AI tool that works that way can be added here. No code change is needed.
+# {HERE} in a command is replaced with this folder's path, {PYTHON} with the Python
+# running ask-all. A tool that can't meet the contract gets a small script in
+# adapters/ that translates (see adapters/agy.py).
+
+# Group: run settings
+[settings]
+# Which model writes the "where they agree / disagree" summary. It sees the answers
+# labelled A, B, C, not by model name, so it can't favour its own.
+compare_with = "claude"
+# Per-model time limit. Long code reviews can take a few minutes.
+timeout_seconds = 600
+
+# Group: Claude (Claude Code CLI, uses your Claude subscription)
+[[model]]
+name = "claude"
+enabled = true
+# -p: answer and exit.  --tools "": no built-in file or shell tools.
+# --strict-mcp-config (with no --mcp-config): loads NONE of your connected apps (Gmail,
+# Drive, Slack, Zapier...). --tools "" alone left them all callable (found 2026-09-28),
+# so a job post with hidden instructions could have tried to send or delete things.
+# --settings: turns off any hooks in your Claude Code setup (a memory hook, for example,
+# would otherwise feed Claude extra context the other models never see).
+command = ["claude", "-p", "--tools", "", "--strict-mcp-config", "--settings", "{HERE}/claude-settings.json"]
+
+# Group: Gemini, through Antigravity CLI (agy), on your Google sign-in, free tier.
+# (Gemini CLI was dropped: Google stopped serving free users there on 2026-06-18.)
+# agy ignores plain piped text, so adapters/agy.py translates; see that file.
+# Model ids: run `agy models`. Pro is the strongest Gemini listed.
+[[model]]
+name = "gemini"
+enabled = true
+command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "gemini-3.1-pro-high"]
+
+# Group: examples you can switch on later (enabled = false: NOT tested on this machine)
+[[model]]
+name = "codex"
+enabled = false
+# OpenAI Codex CLI; "-" means read the prompt from stdin. Needs a ChatGPT sign-in.
+command = ["codex", "exec", "-"]
+
+[[model]]
+name = "local-llama"
+enabled = false
+# Ollama runs a model on this PC for free; needs `ollama pull llama3.1` first.
+command = ["ollama", "run", "llama3.1"]

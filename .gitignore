@@ -1,0 +1,18 @@
+# .gitignore — what never leaves this machine.
+
+# Your personal profile (background facts, playbook, voice). The repo ships
+# profile.example/ instead; copy it to profile/ and fill it in.
+profile/
+
+# Every run: pasted job posts, the full prompt (which includes your profile) and
+# the AIs' answers. Personal, and useless to anyone else.
+runs/
+
+# Local state and logs
+web/server.log
+adapters/.agy-last-update
+
+# Python and test clutter
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  ask-all web page (shell). The look lives in app.css, the behaviour in app.js; both are
+  served by server.py on http://127.0.0.1:8770 (this PC only).
+  Layout: a history sidebar on the left (every past run with one verdict dot per AI),
+  and a main column that shows either the "new question" form or one run's results.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask All</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="app">
+  <!-- Section: history sidebar -->
+  <aside class="side">
+    <div class="brand">
+      <span class="brand-mark">A</span><span class="brand-name">Ask All</span>
+      <span class="spacer"></span>
+      <button class="icon-btn" id="themeBtn" aria-label="Change theme">◐</button>
+    </div>
+    <button class="new-btn" id="newBtn">+ New question</button>
+    <div class="filters" id="filters"></div>
+    <nav id="history" aria-label="Past runs"></nav>
+  </aside>
+  <!-- Section: main column (form, progress, or a run's results) -->
+  <main class="main" id="main"></main>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

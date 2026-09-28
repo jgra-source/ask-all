@@ -1,0 +1,59 @@
+/* ============================================================
+   G Anastacio — brand-light.css
+   Print / light variant. TOKEN OVERRIDES ONLY — link it AFTER
+   brand.css and components.css. Same spacing, same type scale,
+   same green signal; only the values change, so a document can
+   switch theme without any per-document restyling.
+   Use for anything printed or emailed as an attachment.
+   ============================================================ */
+
+:root {
+    /* surfaces */
+    --base: #ffffff;
+    --surf-1: #f8f8f7;
+    --surf-2: #f2f2f1;
+    --surf-3: #ebebea;
+
+    /* signal — fill stays the brand green, text green darkens for
+       contrast on white (#35dd8c is unreadable on paper) */
+    --green: #0ac76e;
+    --green-lift: #07894d;
+    --on-green: #04140c;
+
+    /* text */
+    --tx-1: #121215;
+    --tx-2: #4c4c55;
+    --tx-3: #6e6e77;
+
+    /* hairlines */
+    --line: rgba(0, 0, 0, 0.11);
+    --line-2: rgba(0, 0, 0, 0.20);
+
+    /* semantic — darkened for white ground */
+    --danger: #cc3a34;
+    --warn: #8f6205;
+    --info: #2a6ad0;
+    --danger-soft: rgba(204, 58, 52, 0.09);
+    --warn-soft: rgba(143, 98, 5, 0.09);
+    --info-soft: rgba(42, 106, 208, 0.09);
+    --green-soft: rgba(10, 199, 110, 0.09);
+}
+
+html,
+body {
+    background: #ffffff;
+}
+
+/* the inset top-edge highlight reads as haze on white — depth on
+   light comes from the hairline and the surface step alone */
+.callout,
+.card {
+    box-shadow: none;
+}
+
+@media print {
+    html,
+    body {
+        background: var(--base);
+    }
+}

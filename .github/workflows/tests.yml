@@ -1,0 +1,24 @@
+# tests.yml — runs the test suite on every push and pull request.
+# The tests use pretend AIs (tests/fake_model.py), so no AI account, key or secret
+# is needed here, and nothing is sent to any AI provider.
+# Cost note: free on public repositories; on a private one each run uses about a
+# minute of the account's monthly GitHub Actions allowance.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Step: the code, with history so the "tracked by git" checks can run
+      - uses: actions/checkout@v4
+      # Step: Python 3.12 (3.11+ is required for tomllib)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Step: pytest is the only dependency; Ask All itself uses the standard library only
+      - run: pip install pytest
+      - run: python -m pytest -q

@@ -1,0 +1,13 @@
+  Ask All — the seven-page A4 carousel, for a LinkedIn document post.
+
+  THE CLAIM THAT MUST NOT BE SOFTENED: the reviewers answer, they never act. The Claude
+  reviewer lists "None" when asked for its tools; Gemini's file reads and page opens are
+  refused automatically. Gemini's web search can still run, and is flagged when it does.
+
+  PAGE ONE IS THE FEED THUMBNAIL and states a real defect of this build: "no tools" left
+  every connected app callable (found 2026-09-28 by asking the reviewer to list its tools,
+  fixed with --strict-mcp-config). It must not be softened into a hypothetical.
+
+  No test suite: the proof is saved runs in runs/. One user, no paying client.
+  Assembled by:  python ../docs/assemble_carousel.py deck/_askall_carousel_body.html deck/askall-carousel.html "Ask All — carousel" deck/_askall_carousel_note.txt
+  Renders with:  python deck/render_deck.py deck/askall-carousel.html --size 794x1123 --pdf deck/askall-carousel.pdf

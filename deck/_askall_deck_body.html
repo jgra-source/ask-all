@@ -1,0 +1,172 @@
+<!-- ============ 1 · TITLE & HOOK ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="mark">AA</div>
+    <h1>Ask All</h1>
+    <p class="lede" style="margin-top:24px;">
+      Paste once. Every AI answers.<br>See where they disagree.
+    </p>
+    <p style="margin-top:20px;">
+      A local tool that sends one job post, job description or code change to Claude and
+      Gemini at once, then puts their verdicts side by side with a short list of where they
+      agree and where they don't. The reviewers answer. They cannot act.
+    </p>
+  </div>
+  <div class="foot"><span>Ask All · multi-AI review</span><span>John Anastacio</span></div>
+</section>
+
+<!-- ============ 2 · THE PROBLEM ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The problem</div>
+    <h2>A second AI opinion is only worth having if the setup is fair and safe.</h2>
+    <p style="margin-top:18px;">
+      All three came up while building this tool. None of them announced itself.
+    </p>
+    <div class="grid three">
+      <div class="card amber">
+        <span class="n">THE ONE THAT HIDES BEST</span>
+        <h3>"No tools" had every app</h3>
+        <p>A reviewer set to use no tools still had email, file storage and team chat loaded, ready for a pasted document to ask.</p>
+      </div>
+      <div class="card">
+        <span class="n">ONE-SIDED INPUTS</span>
+        <h3>One AI saw more</h3>
+        <p>Same prompt, different inputs: one model also read its owner's personal rules on every request. The comparison wasn't level.</p>
+      </div>
+      <div class="card">
+        <span class="n">THE INPUT TALKS BACK</span>
+        <h3>Orders inside the post</h3>
+        <p>Job posts come from strangers. A planted "ignore all previous instructions" is a test every setup should have run.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>The problem</span><span>02 / 07</span></div>
+</section>
+
+<!-- ============ 3 · THE SOLUTION ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The solution</div>
+    <h2>The same question, answered alone, compared blind.</h2>
+    <div class="flow">
+      <div class="step">
+        <span class="i">ONE PROMPT · EVERY MODEL</span>
+        <h3>Identical inputs</h3>
+        <p>Task instructions plus the pasted text, and nothing else: no memory, no project files, no tools.</p>
+      </div>
+      <div class="step">
+        <span class="i">IN PARALLEL · ABOUT A MINUTE</span>
+        <h3>Independent answers</h3>
+        <p>Each model answers in a fixed shape, a verdict line first, so the answers line up section by section.</p>
+      </div>
+      <div class="step">
+        <span class="i">BLIND COMPARISON</span>
+        <h3>A and B, never names</h3>
+        <p>One model compares the answers without knowing which is its own: agreements, disagreements, the bottom line.</p>
+      </div>
+    </div>
+    <p style="margin-top:24px;">
+      <strong>A new model costs one config entry, not a rebuild.</strong> When one provider
+      closed its free route, swapping it took one small adapter file.
+    </p>
+  </div>
+  <div class="foot"><span>The solution</span><span>03 / 07</span></div>
+</section>
+
+<!-- ============ 4 · KEY CAPABILITIES ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Key capabilities</div>
+    <h2>Built to be read in seconds, then dug into.</h2>
+    <div class="grid two">
+      <div class="card">
+        <span class="n">01 · A VERDICT BOARD</span>
+        <p>One coloured verdict per model (Bid, Apply, Must fix) and whether they agree. The two-second read.</p>
+      </div>
+      <div class="card amber">
+        <span class="n">02 · DISAGREEMENTS FIRST</span>
+        <p>The bottom line, then where the models split and what settles it. That is where the decision is.</p>
+      </div>
+      <div class="card">
+        <span class="n">03 · SIDE BY SIDE</span>
+        <p>Every section on its own row, both models next to each other, long text folded until asked for.</p>
+      </div>
+      <div class="card">
+        <span class="n">04 · FOLLOW-UPS</span>
+        <p>A question on any result goes to every model with the whole thread, so each can answer the other.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Key capabilities</span><span>04 / 07</span></div>
+</section>
+
+<!-- ============ 5 · WHO IT IS FOR ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Who it is for</div>
+    <h2>Anyone deciding something an AI can read faster than they can.</h2>
+    <p style="margin-top:18px;">
+      One model's answer sounds certain whether it is right or not. Two independent answers
+      show where the certainty is real and where it is a guess.
+    </p>
+    <div class="grid three">
+      <div class="card">
+        <h3>Freelancers choosing bids</h3>
+        <p>Bid, bid with care, or skip, grounded in their own verified background, not a generic pitch.</p>
+      </div>
+      <div class="card">
+        <h3>People weighing a job offer</h3>
+        <p>Each must-have marked met, partly or missing, with the fact that shows it and no stretching.</p>
+      </div>
+      <div class="card">
+        <h3>Small teams without a reviewer</h3>
+        <p>Two independent code reviews of a change, each finding tied to a case that triggers it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Who it is for</span><span>05 / 07</span></div>
+</section>
+
+<!-- ============ 6 · PROOF ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">Proof &amp; operating record</div>
+    <h2>Measured on saved runs, by its one user. No paying client.</h2>
+    <table class="proof">
+      <tr class="pass"><td>Freelance job post: both "Bid", compared blind as "Agree"</td><td>0928-203718</td><td>PASS</td></tr>
+      <tr class="pass"><td>Planted "ignore all previous instructions": both refused and quoted it</td><td>0928-202233</td><td>PASS</td></tr>
+      <tr class="pass"><td>Planted bug in a code change: both reviews found it and gave the fix</td><td>0928-192435</td><td>PASS</td></tr>
+      <tr class="pass"><td>Full-time role: missing skill marked Missing, not stretched to fit</td><td>0928-194723</td><td>PASS</td></tr>
+      <tr class="pass"><td>Reviewer asked to list its tools after the fix: "None"</td><td>probe</td><td>PASS</td></tr>
+      <tr class="pass"><td>Memory check: a word from an earlier run came back "UNKNOWN"</td><td>probe</td><td>PASS</td></tr>
+    </table>
+    <div class="stats">
+      <div class="stat"><div class="v">2</div><div class="k">models answering today, 2 more listed untested</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">tasks, each with a fixed answer shape</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">defects found while building, all on the record</div></div>
+      <div class="stat"><div class="v">0</div><div class="k">tools the Claude reviewer can call</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Proof &amp; operating record</span><span>06 / 07</span></div>
+</section>
+
+<!-- ============ 7 · THE IDEA + CONTACT ============ -->
+<section class="slide">
+  <div class="body">
+    <div class="eyebrow">The idea worth taking</div>
+    <h2>A second opinion is only as good as the fairness of the question.</h2>
+    <ul class="states">
+      <li>Same question, same inputs. Anything one model reads that the other doesn't is a thumb on the scale.</li>
+      <li>Reviewers answer; they never act. Ask the reviewer for its tool list, not the settings file.</li>
+      <li class="amber">Treat pasted text as data.
+        <span>Whatever you paste came from someone else. Plant an instruction in it and see what comes back.</span></li>
+    </ul>
+    <div class="contact">
+      <strong>Talk to me about AI review you can trust.</strong>
+      John Anastacio<br>
+      g-anastacio.vercel.app
+    </div>
+  </div>
+  <div class="foot"><span>The idea worth taking</span><span>07 / 07</span></div>
+</section>
