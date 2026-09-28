@@ -29,11 +29,31 @@ HINTS = {
               "         then run  agy  once and sign in with your Google account.",
     "codex": "Install Codex CLI:  npm install -g @openai/codex\n"
              "         then run  codex  once and sign in with your ChatGPT account (free works, small allowance).",
+    "local-llama": "Install Ollama from https://ollama.com (free, runs on your own computer),\n"
+                   "         then run  ollama pull llama3.1  once (a large download). No account needed.",
 }
 # Block: models that go through an adapter: the command is Python, so "installed" means
 # the tool the adapter calls is on PATH (otherwise every adapter model would look installed)
 ADAPTER_NEEDS = {"agy.py": "agy", "codex.py": "codex"}
 results = []
+
+
+# Block: which program a model really needs (shared with web/server.py's Settings panel)
+def tool_for(model):
+    adapter = next((a for a in ADAPTER_NEEDS if any(a in part for part in model["command"])), None)
+    return ADAPTER_NEEDS[adapter] if adapter else model["command"][0].replace("{PYTHON}", sys.executable)
+
+
+# Block: is that program installed? agy's installer puts it in %LOCALAPPDATA%\agy\bin,
+# which a shell opened before the install may not have on PATH yet
+def is_installed(model):
+    exe = tool_for(model)
+    local_agy = os.path.join(os.environ.get("LOCALAPPDATA", ""), "agy", "bin", "agy.exe")
+    return bool(shutil.which(exe)) or (exe == "agy" and os.path.exists(local_agy))
+
+
+def hint_for(model):
+    return HINTS.get(model["name"], "Check the command for this model in models.toml.")
 
 
 # Block: one line of the report, remembered so the summary can count failures
@@ -73,15 +93,9 @@ def main():
     # Block: each model: installed? then (unless --no-ping) answers a test question?
     workdir = tempfile.mkdtemp(prefix="ask-all-check-")
     for m in models:
-        exe = m["command"][0].replace("{PYTHON}", sys.executable)
-        adapter = next((a for a in ADAPTER_NEEDS if any(a in part for part in m["command"])), None)
-        if adapter:
-            exe = ADAPTER_NEEDS[adapter]
-        hint = HINTS.get(m["name"], "Check the command for this model in models.toml.")
-        # agy's installer puts it in %LOCALAPPDATA%\agy\bin, which a fresh shell may not have on PATH
-        local_agy = os.path.join(os.environ.get("LOCALAPPDATA", ""), "agy", "bin", "agy.exe")
-        if not shutil.which(exe) and not (exe == "agy" and os.path.exists(local_agy)):
-            report("FAIL", f"{m['name']}", f"'{exe}' is not installed or not on PATH", hint)
+        hint = hint_for(m)
+        if not is_installed(m):
+            report("FAIL", f"{m['name']}", f"'{tool_for(m)}' is not installed or not on PATH", hint)
             continue
         if args.no_ping:
             report("OK", f"{m['name']}", "installed (not pinged)")

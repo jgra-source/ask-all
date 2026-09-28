@@ -32,7 +32,8 @@ Two make the comparison work; one still gives you the structured answer.
 | Gemini | Antigravity CLI from [antigravity.google/download](https://antigravity.google/download) (Windows: `irm https://antigravity.google/cli/install.ps1 \| iex`) | run `agy` once, Google sign-in | free tier |
 | Codex (OpenAI) | `npm install -g @openai/codex`, then set `enabled = true` for `codex` in `models.toml` | run `codex` once, ChatGPT sign-in | free ChatGPT account works (small allowance); paid plans get more |
 
-Claude and Gemini are switched on by default. Codex is switched off, and **untested**:
+Claude and Gemini are switched on by default; switch models on and off in **⚙ Settings**
+on the page. Codex is switched off, and **untested**:
 see [Codex](#codex). Any other command-line AI works too; see [Add a model](#add-a-model).
 
 **2. Get the code.** You need Python 3.11+ and nothing else from pip.
@@ -101,6 +102,16 @@ pointing at it: `@include /path/to/your/resume-facts.yaml`.
 
 - **The page:** pick a task, paste, press **Ask** (or Ctrl+Enter). About a minute later
   you get the verdict board. Past runs are in the sidebar; any of them can take follow-ups.
+- **Settings (⚙ in the sidebar):**
+  - **AI models:** each one's status (On, Off, Not installed), an on/off switch, and a
+    **Test** button that sends it a one-line question. A missing model shows its install
+    steps. A model you switch on appears as a pill on the main screen.
+  - **Your profile:** view and edit the four profile files. The first Save creates your
+    private `profile/` folder from the example.
+  - Your on/off choices are saved in `settings.local.json`, not in `models.toml`, so
+    they stay on your computer (both `settings.local.json` and `profile/` are
+    git-ignored). The page can switch models and edit the profile, but it can never
+    change the command a model runs; that only happens by editing `models.toml` yourself.
 - **The command line:** the same engine, one report page per run.
 
   ```bash
@@ -142,8 +153,9 @@ events in that format (`tests/test_codex_adapter.py`). To switch it on:
 
 1. `npm install -g @openai/codex` (about 430 MB on Windows), then run `codex` once and
    sign in with your ChatGPT account.
-2. In `models.toml`, set `enabled = true` under `name = "codex"`.
-3. Run `python check_setup.py`. It sends Codex a test question.
+2. Open **⚙ Settings** on the page and switch Codex on (or set `enabled = true` under
+   `name = "codex"` in `models.toml`).
+3. Press **Test** next to Codex (or run `python check_setup.py`). It sends Codex a test question.
 4. Read the first real answer yourself, including any WARNING at its top.
 
 Why it goes through an adapter: Codex can run commands and **read files even in its

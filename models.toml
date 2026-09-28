@@ -51,6 +51,8 @@ command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "gemini-3.1-pro-high
 name = "codex"
 enabled = false
 command = ["{PYTHON}", "{HERE}/adapters/codex.py"]
+# "note" is shown next to the model in the page's Settings
+note = "Untested with a real Codex install. Check its first answer by hand; any command it runs is flagged."
 
 [[model]]
 name = "local-llama"

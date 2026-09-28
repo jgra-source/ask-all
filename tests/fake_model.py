@@ -23,6 +23,11 @@ if args.fail:
     sys.stderr.write("fake model: deliberate failure\n")
     sys.exit(3)
 
+# Block: the setup checker's and Settings' one-line test question
+if prompt.strip() == "Reply with exactly: OK":
+    print("OK")
+    sys.exit(0)
+
 # Block: a follow-up (says whether it was told which earlier answer was its own).
 # Checked FIRST: a follow-up prompt also contains the earlier comparison's headings.
 if "## The user's new follow-up question" in prompt:

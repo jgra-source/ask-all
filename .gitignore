@@ -8,6 +8,10 @@ profile/
 # the AIs' answers. Personal, and useless to anyone else.
 runs/
 
+# This machine's choices from the page's Settings (which models are on)
+settings.local.json
+settings.local.tmp
+
 # Local state and logs
 web/server.log
 adapters/.agy-last-update

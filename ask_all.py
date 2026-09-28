@@ -18,7 +18,8 @@ prints an answer. Adding one is a models.toml edit, never a code change.
 Personal details live in a profile folder, never in the task files: profile/ (yours,
 kept out of git) or, if that doesn't exist, profile.example/ (a fictional person, so a
 fresh copy works on day one). Task files load it with "@include {{PROFILE}}/<file>".
-Environment overrides (used by the tests): ASK_ALL_PROFILE, ASK_ALL_CONFIG, ASK_ALL_RUNS.
+Environment overrides (used by the tests): ASK_ALL_PROFILE, ASK_ALL_CONFIG, ASK_ALL_RUNS,
+ASK_ALL_LOCAL (the git-ignored settings.local.json holding this machine's on/off choices).
 
 Usage:
   python ask_all.py job-post --file post.txt
@@ -57,10 +58,39 @@ MAX_INPUT_CHARS = 200_000
 MAX_INCLUDE_DEPTH = 3
 
 
-# Block: load models.toml (the list of models and run settings)
+# Block: this machine's own choices, made in the page's Settings (which models are on).
+# Kept in a git-ignored file so switching a model on never edits the shared models.toml.
+def local_settings_path():
+    return Path(os.environ.get("ASK_ALL_LOCAL") or HERE / "settings.local.json")
+
+
+def read_local_settings():
+    try:
+        return json.loads(local_settings_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}                        # no file yet, or unreadable: fall back to models.toml as-is
+
+
+# Block: record one model's on/off choice; written to a temp file then swapped in, so a
+# crash mid-write can't leave a half-written settings file
+def set_model_enabled(name, enabled):
+    data = read_local_settings()
+    data.setdefault("models", {}).setdefault(name, {})["enabled"] = bool(enabled)
+    path = local_settings_path()
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+# Block: load models.toml (the models and run settings), then apply this machine's choices
 def load_config():
     with open(os.environ.get("ASK_ALL_CONFIG") or HERE / "models.toml", "rb") as f:
-        return tomllib.load(f)
+        cfg = tomllib.load(f)
+    overrides = read_local_settings().get("models", {})
+    for m in cfg.get("model", []):
+        if "enabled" in overrides.get(m["name"], {}):
+            m["enabled"] = bool(overrides[m["name"]]["enabled"])
+    return cfg
 
 
 # Block: which profile folder to use: ASK_ALL_PROFILE, else profile/, else the example.
@@ -155,7 +185,9 @@ def read_input(args, raw=False):
 # Block: run ONE model: prompt in on stdin, answer out on stdout.
 # Every outcome is recorded (ok / failed / timeout / missing) so a model that didn't
 # answer shows up as that, never as a silently missing column.
-def run_model(model, prompt, workdir, timeout):
+def run_model(model, prompt, workdir, timeout, flags=0):
+    # flags: Windows process flags; the page server passes CREATE_NO_WINDOW for its
+    # Settings "Test" button, because it has no console and would otherwise pop one up
     name = model["name"]
     # {PYTHON} = this same Python, so adapters never hit the Microsoft Store "python" stub
     cmd = [c.replace("{HERE}", str(HERE)).replace("{PYTHON}", sys.executable)
@@ -168,7 +200,7 @@ def run_model(model, prompt, workdir, timeout):
     start = time.monotonic()
     try:
         r = subprocess.run(cmd, input=prompt.encode("utf-8"), capture_output=True,
-                           cwd=workdir, timeout=timeout)
+                           cwd=workdir, timeout=timeout, creationflags=flags)
     except subprocess.TimeoutExpired:
         return {"name": name, "status": "timeout", "secs": timeout,
                 "text": f"No answer within {timeout}s."}

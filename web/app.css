@@ -241,4 +241,42 @@ details.input-view pre { margin-top: 8px; padding: 12px 14px; border-radius: var
 .reply textarea { width: 100%; min-height: 70px; resize: vertical; border: 0; background: transparent; padding: 4px 6px; line-height: 1.5; }
 .reply textarea:focus { outline: none; }
 .reply .bar { margin-top: 6px; }
+/* Block: sidebar's secondary button (Settings) */
+.new-btn.secondary { background: transparent; font-weight: 500; color: var(--tx-2); margin-top: -8px; }
+
+/* Block: Settings page: model rows with status chip, Test and an on/off switch; profile editors */
+.settings h1 { font-size: 22px; font-weight: 700; }
+.settings .lead { color: var(--tx-2); margin: 4px 0 20px; }
+.settings h2 { font-size: 16px; margin: 26px 0 10px; }
+.settings .hint { color: var(--tx-3); font-size: 12.5px; margin-top: 6px; }
+.settings code { font-family: var(--mono); font-size: 12px; background: var(--surf-3); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.mlist { display: grid; gap: 10px; max-width: 760px; }
+.mrow { background: var(--surf-1); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.mhead { display: flex; align-items: center; gap: 10px; }
+.mhead .spacer { flex: 1; }
+.chip-status { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--surf-3); color: var(--tx-3); }
+.chip-status.good { background: var(--green-soft); color: var(--green-lift); }
+.chip-status.bad { background: var(--danger-soft); color: var(--danger); }
+button.linkish:disabled { opacity: .4; cursor: not-allowed; }
+.switch { position: relative; width: 38px; height: 22px; flex: none; cursor: pointer; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--surf-3); border: 1px solid var(--line-2); transition: background .15s; }
+.switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--tx-3); transition: transform .15s, background .15s; }
+.switch input:checked + span { background: var(--green); border-color: var(--green); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--on-green); }
+.switch input:focus-visible + span { outline: 2px solid var(--green); outline-offset: 2px; }
+pre.fix { margin-top: 8px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surf-2); border: 1px solid var(--line);
+          font-family: var(--mono); font-size: 12px; white-space: pre-wrap; color: var(--tx-2); }
+.mtest { margin-top: 6px; font-size: 13px; }
+.mtest .pass { color: var(--green-lift); }
+.pfile { max-width: 900px; margin-bottom: 16px; }
+.pfhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.pfhead .hint { margin-top: 0; }
+/* ligatures off in editors and code: JetBrains Mono otherwise draws "<!--" and "-->" as
+   arrows, and you should see exactly the characters you are editing */
+textarea.pf { min-height: 150px; font-family: var(--mono); font-size: 12.5px; }
+textarea.pf, .input.code, pre.fix, .settings code { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+.primary.small { padding: 7px 16px; font-size: 13px; }
+.status.care { color: var(--warn); } .status.bad { color: var(--danger); }
+
 iframe.legacy { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); min-height: 70vh; background: #fff; }

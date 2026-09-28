@@ -27,7 +27,8 @@ import server   # noqa: E402
 # Block: run ask_all.py with the fake models, the example profile and a throwaway runs folder
 def run(args, stdin, runs, profile="profile.example"):
     env = {**os.environ, "ASK_ALL_CONFIG": str(ROOT / "tests" / "models.test.toml"),
-           "ASK_ALL_RUNS": str(runs), "ASK_ALL_PROFILE": str(ROOT / profile), "PYTHONIOENCODING": "utf-8"}
+           "ASK_ALL_RUNS": str(runs), "ASK_ALL_PROFILE": str(ROOT / profile), "PYTHONIOENCODING": "utf-8",
+           "ASK_ALL_LOCAL": str(runs.parent / f"{runs.name}-local.json")}   # never the real on/off choices
     r = subprocess.run([sys.executable, str(ROOT / "ask_all.py"), *args], input=stdin.encode("utf-8"),
                        capture_output=True, env=env, timeout=120)
     return r.returncode, r.stdout.decode("utf-8", "replace") + r.stderr.decode("utf-8", "replace")

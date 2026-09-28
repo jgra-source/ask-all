@@ -10,6 +10,12 @@ so the page can show a glanceable verdict board instead of walls of text.
 Follow-up questions run `ask_all.py --followup <run>`; the thread lives in the run folder.
 Why a server: a web page alone can't start programs on the PC; this tiny server does.
 
+Settings (the page's ⚙): shows each model's status with an on/off switch and a Test
+button, and lets you edit the four profile files. On/off choices go to the git-ignored
+settings.local.json (never the shared models.toml); profile edits go to the git-ignored
+profile/ folder, created from profile.example/ on the first save. The page can NEVER
+change the command a model runs: otherwise a web page could make this run programs.
+
 Safety: listens on 127.0.0.1 only; refuses requests carrying another website's Origin
 or Host; JSON-only POSTs; only the three page tasks; only files it knows by name.
 
@@ -19,11 +25,12 @@ already running, then opens the page. No console window. Stdlib only, no install
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
-import tomllib
 import urllib.request
 import uuid
 import webbrowser
@@ -32,6 +39,9 @@ from pathlib import Path
 
 WEB = Path(__file__).resolve().parent
 ROOT = WEB.parent                       # the ask-all folder
+sys.path.insert(0, str(ROOT))
+import ask_all       # noqa: E402  (config with this machine's choices, run_model for Test)
+import check_setup   # noqa: E402  (is a model's program installed, and how to fix it)
 RUNS = ROOT / "runs"
 HOST, PORT = "127.0.0.1", 8770          # 8765/8766 are taken by other preview configs
 URL = f"http://{HOST}:{PORT}/"
@@ -63,12 +73,110 @@ def log(msg):
 
 
 # Block: what the page can offer: the allowed tasks that exist in tasks/, enabled models
+# (models.toml plus this machine's on/off choices from Settings)
 def options():
     tasks = [t for t in PAGE_TASKS if (ROOT / "tasks" / f"{t}.md").exists()]
-    with open(ROOT / "models.toml", "rb") as f:
-        cfg = tomllib.load(f)
-    models = [m["name"] for m in cfg.get("model", []) if m.get("enabled", True)]
+    models = [m["name"] for m in ask_all.load_config().get("model", []) if m.get("enabled", True)]
     return {"tasks": tasks, "models": models}
+
+
+# ---------------------------------------------------------------------------
+# Settings: model status and on/off, a test question, and the profile files
+# ---------------------------------------------------------------------------
+
+# the only profile files the page may read or write, with what each is for
+PROFILE_FILES = {
+    "about.md": "Who you are: location and time zone, work arrangements, how answers should be written.",
+    "facts.md": "Your verified background. Every claim the AIs make about you must come from here.",
+    "playbook.md": "How you judge a freelance job post: thresholds, positioning, proposal rules.",
+    "code_rules.md": "House rules new code must meet. Can be empty.",
+}
+MAX_PROFILE_CHARS = 300_000
+INCLUDE_ONLY = re.compile(r"^\s*(?:<!--.*?-->\s*)*@include\s+(.+?)\s*$", re.S)
+
+
+# Block: where Settings saves the profile: ASK_ALL_PROFILE, else profile/ (created on first save)
+def profile_target():
+    chosen = os.environ.get("ASK_ALL_PROFILE")
+    return Path(chosen).expanduser().resolve() if chosen else ROOT / "profile"
+
+
+def find_model(name):
+    model = next((m for m in ask_all.load_config().get("model", []) if m["name"] == name), None)
+    if not model:
+        raise ValueError(f"unknown model {name!r}")
+    return model
+
+
+# Block: everything the Settings view shows. A profile file that is only an "@include"
+# line points at a file kept elsewhere; the page says so instead of hiding it.
+def settings_view():
+    models = [{"name": m["name"], "enabled": m.get("enabled", True), "installed": check_setup.is_installed(m),
+               "tool": check_setup.tool_for(m), "hint": check_setup.hint_for(m), "note": m.get("note", "")}
+              for m in ask_all.load_config().get("model", [])]
+    target = profile_target()
+    using = target if target.is_dir() else ROOT / "profile.example"
+    files = []
+    for name, what in PROFILE_FILES.items():
+        path = using / name
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        m = INCLUDE_ONLY.match(text)
+        files.append({"name": name, "what": what, "text": text, "points_to": m.group(1) if m else None})
+    return {"models": models,
+            "profile": {"folder": str(using), "is_example": not target.is_dir(), "files": files},
+            "files": {"models": str(ROOT / "models.toml"), "choices": str(ask_all.local_settings_path())}}
+
+
+# Block: switch one model on or off, then read it back from the config every run loads
+def set_model(body):
+    name, enabled = body.get("name"), body.get("enabled")
+    find_model(name)
+    if not isinstance(enabled, bool):
+        raise ValueError("enabled must be true or false")
+    ask_all.set_model_enabled(name, enabled)
+    now = find_model(name).get("enabled", True)
+    if now is not enabled:
+        raise ValueError(f"saved, but reading it back shows {name} {'on' if now else 'off'}")
+    log(f"settings: {name} {'on' if enabled else 'off'}")
+    return {"name": name, "enabled": now}
+
+
+# Block: send one model a tiny test question, the same way a real run does (no window)
+def test_model(body):
+    model = find_model(body.get("name"))
+    if not check_setup.is_installed(model):
+        return {"status": "missing", "secs": 0, "text": check_setup.hint_for(model)}
+    workdir = tempfile.mkdtemp(prefix="ask-all-test-")
+    try:
+        r = ask_all.run_model(model, "Reply with exactly: OK", workdir, 180, flags=NO_WINDOW)
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    passed = r["status"] == "ok" and "OK" in r["text"].upper()
+    log(f"settings: test {model['name']} -> {r['status']} {r['secs']}s")
+    return {"status": "ok" if passed else ("odd" if r["status"] == "ok" else r["status"]),
+            "secs": r["secs"], "text": r["text"].strip()[-400:]}
+
+
+# Block: save one profile file. First save creates profile/ from the example, so the
+# other three files exist too. Temp file then swap, then read back to prove it stuck.
+def save_profile(body):
+    name, text = body.get("file"), body.get("text")
+    if name not in PROFILE_FILES or not isinstance(text, str):
+        raise ValueError("unknown profile file")
+    if len(text) > MAX_PROFILE_CHARS:
+        raise ValueError(f"too long ({len(text):,} characters, limit {MAX_PROFILE_CHARS:,})")
+    target = profile_target()
+    created = not target.is_dir()
+    if created:
+        shutil.copytree(ROOT / "profile.example", target)
+    path = target / name
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+    if path.read_text(encoding="utf-8") != text:
+        raise ValueError("saved, but reading it back gave different text")
+    log(f"settings: saved {path} ({len(text)} chars){' (created profile/)' if created else ''}")
+    return {"file": name, "folder": str(target), "created": created}
 
 
 # ---------------------------------------------------------------------------
@@ -341,6 +449,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, options())
         if path == "/api/runs":
             return self._send(200, past_runs())
+        if path == "/api/settings":
+            return self._send(200, settings_view())
         m = re.fullmatch(r"/api/run/([^/]+)", path)
         if m and RUN_NAME.match(m.group(1)):
             view = run_view(m.group(1))
@@ -361,17 +471,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, f.read_bytes(), "text/html")
         return self._send(404, {"error": "not found"})
 
-    # Block: start a run or a follow-up. JSON only: a cross-site form can't send JSON
-    # without the browser asking permission first, and this server never grants it.
+    # Block: start a run or a follow-up, or change a setting. JSON only: a cross-site form
+    # can't send JSON without the browser asking permission first, and this server never grants it.
     def do_POST(self):
         starters = {"/api/ask": start_job, "/api/followup": start_followup}
-        if not self._allowed() or self.path not in starters:
+        settings = {"/api/settings/model": set_model, "/api/settings/test": test_model,
+                    "/api/settings/profile": save_profile}
+        if not self._allowed() or self.path not in {**starters, **settings}:
             return self._send(403, {"error": "forbidden"})
         if "application/json" not in (self.headers.get("Content-Type") or ""):
             return self._send(415, {"error": "JSON only"})
         try:
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
-            return self._send(200, {"id": starters[self.path](body)})
+            if self.path in starters:
+                return self._send(200, {"id": starters[self.path](body)})
+            return self._send(200, settings[self.path](body))
         except (ValueError, json.JSONDecodeError) as e:
             return self._send(400, {"error": str(e)})
 

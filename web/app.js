@@ -369,6 +369,100 @@ async function submitFollowup() {
 }
 
 // ---------------------------------------------------------------------------
+// Settings: which AIs answer (live status, on/off, Test), and the four profile files.
+// The page can switch models and edit the profile; it can never change a model's command.
+// ---------------------------------------------------------------------------
+
+async function showSettings() {
+  state.current = null; renderSide();
+  const { ok, data } = await getJSON("/api/settings");
+  if (!ok) { $("#main").innerHTML = '<p class="error">Couldn\'t load settings.</p>'; return; }
+  const p = data.profile;
+  $("#main").innerHTML = `
+    <section class="settings">
+      <h1>Settings</h1>
+      <p class="lead">Which AIs answer, and what they know about you. Everything here is saved on this computer only.</p>
+
+      <h2>AI models</h2>
+      <div class="mlist">${data.models.map(modelRow).join("")}</div>
+      <p class="hint">Each model's command lives in <code>${esc(data.files.models)}</code> (edit it there to add a model; see the README). Your on/off choices are kept in <code>${esc(data.files.choices)}</code>.</p>
+
+      <h2>Your profile</h2>
+      ${p.is_example
+        ? `<div class="banner care"><b>You're using the example person, Sam Rivera.</b>Replace the text below with your own details. The first Save creates your own private profile folder.</div>`
+        : `<p class="hint">Saved in <code>${esc(p.folder)}</code>: private, never uploaded.</p>`}
+      ${p.files.map(profileEditor).join("")}
+    </section>`;
+}
+
+// Block: one model: status chip, Test, on/off switch, and the install steps when it's missing
+function modelRow(m) {
+  const [tone, label] = !m.installed ? ["bad", "Not installed"] : m.enabled ? ["good", "On"] : ["none", "Off"];
+  return `<div class="mrow">
+    <div class="mhead"><span class="dot ${m.name}"></span><b>${cap(m.name)}</b>
+      <span class="chip-status ${tone}">${label}</span><span class="spacer"></span>
+      <button class="linkish" data-test="${m.name}" ${m.installed ? "" : "disabled"}>Test</button>
+      <label class="switch" title="${m.enabled ? "On: answers every question" : "Off"}">
+        <input type="checkbox" data-toggle="${m.name}" ${m.enabled ? "checked" : ""}><span></span></label>
+    </div>
+    ${m.note ? `<p class="hint">${esc(m.note)}</p>` : ""}
+    ${!m.installed ? `<pre class="fix">${esc(m.hint)}</pre>` : ""}
+    <div class="mtest" id="test-${m.name}"></div>
+  </div>`;
+}
+
+// Block: one profile file: what it's for, a note if it only points at another file, Save
+function profileEditor(f) {
+  return `<div class="pfile">
+    <div class="pfhead"><b class="mono">${f.name}</b><span class="hint">${esc(f.what)}</span></div>
+    ${f.points_to ? `<p class="hint">This file points to <code>${esc(f.points_to)}</code>. Edit that file to change what the AIs see, or replace this with your own text.</p>` : ""}
+    <textarea class="input pf" data-file="${f.name}" spellcheck="false">${esc(f.text)}</textarea>
+    <div class="bar"><span class="status" id="st-${f.name.replace(".", "-")}"></span><span class="spacer"></span>
+      <button class="primary small" data-save="${f.name}">Save</button></div>
+  </div>`;
+}
+
+// Block: keep the composer's model pills in step after a model is switched on or off
+async function refreshOptions() {
+  const { ok, data } = await getJSON("/api/options");
+  if (!ok) return;
+  const before = new Set(state.options.models);
+  state.options = data;
+  for (const m of data.models) if (!before.has(m)) state.models.add(m);
+  for (const m of [...state.models]) if (!data.models.includes(m)) state.models.delete(m);
+}
+
+async function toggleModel(box) {
+  const { ok, data } = await postJSON("/api/settings/model", { name: box.dataset.toggle, enabled: box.checked });
+  if (!ok) { box.checked = !box.checked; alert(data.error || "Couldn't save."); return; }
+  await refreshOptions();
+  showSettings();
+}
+
+async function testModel(btn) {
+  const out = $(`#test-${btn.dataset.test}`);
+  btn.disabled = true;
+  out.innerHTML = '<span class="spin"></span> <span class="hint">Sending a one-line test question (up to a minute)...</span>';
+  const { ok, data } = await postJSON("/api/settings/test", { name: btn.dataset.test });
+  btn.disabled = false;
+  if (!ok) { out.innerHTML = `<span class="error">${esc(data.error || "Test failed.")}</span>`; return; }
+  out.innerHTML = data.status === "ok"
+    ? `<span class="pass">✓ Installed, signed in, answered in ${data.secs}s.</span>`
+    : `<span class="error">✗ ${esc(data.status)}</span><pre class="fix">${esc(data.text)}</pre>`;
+}
+
+async function saveProfile(btn) {
+  const name = btn.dataset.save, st = $(`#st-${name.replace(".", "-")}`);
+  const text = document.querySelector(`textarea[data-file="${name}"]`).value;
+  btn.disabled = true;
+  const { ok, data } = await postJSON("/api/settings/profile", { file: name, text });
+  btn.disabled = false;
+  if (!ok) { st.textContent = data.error || "Couldn't save."; st.className = "status bad"; return; }
+  if (data.created) return showSettings();          // profile/ now exists: redraw without the example banner
+  st.textContent = "Saved ✓"; st.className = "status";
+}
+
+// ---------------------------------------------------------------------------
 // Wiring: one click handler for the whole page, keyboard shortcuts, routing, theme
 // ---------------------------------------------------------------------------
 
@@ -383,6 +477,9 @@ document.addEventListener("click", e => {
   else if (t.dataset.filter) { state.filter = t.dataset.filter; renderSide(); }
   else if (t.dataset.run) { location.hash = "#run=" + t.dataset.run; }
   else if (t.id === "newBtn") { location.hash = "#new"; }
+  else if (t.id === "settingsBtn") { location.hash = "#settings"; }
+  else if (t.dataset.test) testModel(t);
+  else if (t.dataset.save) saveProfile(t);
   else if (t.id === "askBtn") submitAsk();
   else if (t.id === "sendBtn") submitFollowup();
   else if (t.id === "themeBtn") cycleTheme();
@@ -398,6 +495,14 @@ document.addEventListener("click", e => {
     t.textContent = open ? "Collapse all" : "Expand all";
   }
 });
+// switches fire "change", not "click"; profile boxes mark themselves unsaved while typing
+document.addEventListener("change", e => { if (e.target.dataset?.toggle) toggleModel(e.target); });
+document.addEventListener("input", e => {
+  if (e.target.dataset?.file) {
+    const st = $(`#st-${e.target.dataset.file.replace(".", "-")}`);
+    st.textContent = "Unsaved changes"; st.className = "status care";
+  }
+});
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter" || !e.ctrlKey) return;
   if (e.target.id === "text") submitAsk();
@@ -407,6 +512,7 @@ document.addEventListener("keydown", e => {
 function route() {
   const h = decodeURIComponent(location.hash);
   if (h.startsWith("#run=")) openRun(h.slice(5));
+  else if (h === "#settings") showSettings();
   else showComposer();
 }
 window.addEventListener("hashchange", route);
