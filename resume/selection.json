@@ -1,0 +1,61 @@
+{
+ "company": "Indeed",
+ "role_line": "AI Automation Specialist \u2014 n8n, RAG & CRM Workflows",
+ "summary": "AI automation specialist who builds RAG pipelines, AI agents, and workflow automation where data integrity is the design goal: source-cited retrieval, failure-path testing, confidence-gated learning. Owns the path from discovery to handover.",
+ "skills": [
+  "sk-automation",
+  "sk-ai",
+  "sk-ghl",
+  "sk-data",
+  "sk-platforms",
+  "sk-se",
+  "sk-gov",
+  "sk-backend"
+ ],
+ "projects": [
+  "prj-legal-rag",
+  "prj-ghl-dedupe",
+  "prj-crm",
+  "prj-automation-audit",
+  "prj-ghl-sync"
+ ],
+ "experience": {
+  "exp-independent": [
+   "ind-agents",
+   "ind-audit",
+   "ind-reliability"
+  ],
+  "exp-cnx": [
+   "cnx-translate",
+   "cnx-stakeholders",
+   "cnx-storage"
+  ],
+  "exp-hpe": [
+   "hpe-change",
+   "hpe-runbooks"
+  ]
+ },
+ "cut_order": [
+  "bullets",
+  "skills",
+  "projects"
+ ],
+ "bench": {
+  "skills": [
+   "sk-observability",
+   "sk-evals"
+  ],
+  "projects": [
+   "prj-ghl-attribution",
+   "prj-client-docs"
+  ],
+  "experience": {
+   "exp-independent": [
+    "ind-observability"
+   ],
+   "exp-cnx": [
+    "cnx-network"
+   ]
+  }
+ }
+}
