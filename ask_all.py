@@ -310,6 +310,17 @@ def write_report(path, task, results, comparison, source, thread=()):
         f'<section class="card question"><div class="body">{esc(t["question"])}</div></section>'
         f'<div class="grid">{cards(t["results"])}</div>'
         for i, t in enumerate(thread, 1))
+    resume_banner = ""
+    resume_file = path.parent / "resume.pdf"
+    if resume_file.exists():
+        sel_link = f' · <a href="resume.selection.json" target="_blank" style="color:var(--muted); font-size:12px;">Selection JSON</a>' if (path.parent / "resume.selection.json").exists() else ""
+        resume_banner = (
+            f'<section class="card resume" style="border-left:4px solid var(--accent); background:#f0f6fc; margin-bottom:14px; padding:12px 16px;">'
+            f'<p style="margin:0; font-weight:600;">📄 Tailored 1-Page Resume: '
+            f'<a href="resume.pdf" target="_blank" style="color:var(--accent); text-decoration:underline;">Download PDF</a>{sel_link}'
+            f'</p></section>'
+        )
+
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -337,6 +348,7 @@ h3.turn {{ font-size:15px; margin:24px 0 8px; color:var(--muted); }}
 <body><main>
 <!-- Section: what was asked -->
 <header><h1>ask-all · {esc(task)}</h1><p>{esc(source)}</p></header>
+{resume_banner}
 <!-- Section: comparison summary -->
 {head}
 <!-- Section: each model's full first answer -->
@@ -450,9 +462,12 @@ def main():
     ap.add_argument("--no-compare", action="store_true", help="skip the agree/disagree summary")
     ap.add_argument("--followup", metavar="RUN", help="continue this run (folder name in runs/) with a follow-up question")
     ap.add_argument("--dry-run", action="store_true", help="print the exact prompt the models would get, and send nothing")
+    ap.add_argument("--resume", action="store_true", help="generate a tailored one-page resume for this job-fit run")
     args = ap.parse_args()
     if bool(args.task) == bool(args.followup):
         ap.error("give a task for a new run, OR --followup RUN to continue one")
+    if args.resume and args.task != "job-fit":
+        ap.error("--resume is available only for job-fit runs")
 
     cfg = load_config()
     all_models = cfg.get("model", [])
@@ -461,6 +476,19 @@ def main():
         run_dir, results = followup_run(args, all_models, timeout)
     else:
         run_dir, results = new_run(args, cfg, all_models, timeout)
+
+    if args.resume and getattr(args, "task", None) == "job-fit":
+        try:
+            from integrations.resume import generate_resume_for_run
+            res = generate_resume_for_run(run_dir)
+            print(f"Tailored Resume generated: {res['pdf']}")
+            state = json.loads((run_dir / "results.json").read_text(encoding="utf-8"))
+            thread_file = run_dir / "thread.json"
+            thread = json.loads(thread_file.read_text(encoding="utf-8")) if thread_file.exists() else []
+            write_report(run_dir / "report.html", state["task"], state["results"], state.get("comparison"), state.get("source", ""), thread)
+        except (ImportError, OSError, RuntimeError, ValueError) as e:
+            print(f"Warning: resume generation failed: {e}")
+            sys.exit(1)
 
     # Say where the page is (web/server.py reads this exact line)
     answered = sum(r["status"] == "ok" for r in results)

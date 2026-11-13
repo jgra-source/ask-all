@@ -67,6 +67,61 @@ def test_plain_form_post_is_refused(port):
     assert status == 415
 
 
+def test_resume_generation_rejects_non_job_fit_run(port, tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "RUNS", tmp_path)
+    run_dir = tmp_path / "20261111-120000-job-post"
+    run_dir.mkdir()
+    (run_dir / "results.json").write_text(json.dumps({
+        "task": "job-post", "results": [],
+    }), encoding="utf-8")
+    status, reply = request(
+        port, "POST", "/api/resume/generate",
+        {"Content-Type": "application/json"},
+        json.dumps({"run": run_dir.name}),
+    )
+    assert status == 400
+    assert b"only for job-fit" in reply
+
+
+def test_resume_generation_serves_only_run_artifacts(port, tmp_path, monkeypatch):
+    import integrations.resume as resume
+
+    monkeypatch.setattr(server, "RUNS", tmp_path)
+    run_dir = tmp_path / "20261111-120000-job-fit"
+    run_dir.mkdir()
+    (run_dir / "results.json").write_text(json.dumps({
+        "task": "job-fit", "results": [], "source": "test",
+    }), encoding="utf-8")
+
+    def fake_generate(run_path, company=None, role_line=None, selection=None):
+        (run_path / "resume.pdf").write_bytes(b"test pdf")
+        (run_path / "resume.selection.json").write_text("{}", encoding="utf-8")
+        state_path = run_path / "results.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["resume"] = {
+            "selection_source": "deterministic",
+            "downloads_filename": "resume.pdf",
+            "warnings": [],
+        }
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        return {
+            "ok": True, "company": "Acme", "role_line": "Engineer",
+            "downloads_filename": "resume.pdf", "selection_source": "deterministic",
+            "warnings": [],
+        }
+
+    monkeypatch.setattr(resume, "generate_resume_for_run", fake_generate)
+    status, reply = request(
+        port, "POST", "/api/resume/generate",
+        {"Content-Type": "application/json"},
+        json.dumps({"run": run_dir.name}),
+    )
+    assert status == 200
+    assert json.loads(reply)["pdf_url"] == f"/runs/{run_dir.name}/resume.pdf"
+    assert request(port, "GET", f"/runs/{run_dir.name}/resume.pdf")[1] == b"test pdf"
+    assert request(port, "GET", "/server.py")[0] == 404
+
+
 def test_unknown_task_is_refused_without_a_run(port):
     body = json.dumps({"task": "_compare", "text": "x", "models": ["claude"]})
     status, reply = request(port, "POST", "/api/ask", {"Content-Type": "application/json"}, body)

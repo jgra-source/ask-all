@@ -286,6 +286,94 @@ function alignSections(answers) {
   return order.map(k => rows[k]);
 }
 
+function renderResumeSection(v) {
+  const hasResume = v.resume && v.resume.has_resume;
+  const comp = v.suggested_company || "";
+  const resumeNotes = hasResume
+    ? [
+        v.resume.selection_source === "model"
+          ? "Used the job-fit model's selection."
+          : "Used deterministic JD matching because no usable model selection was available.",
+        v.resume.downloads_filename
+          ? `Also copied to Downloads as ${esc(v.resume.downloads_filename)}.`
+          : "The PDF is saved with this run.",
+        ...(Array.isArray(v.resume.warnings) ? v.resume.warnings.map(esc) : []),
+      ]
+    : [];
+  return `
+    <div class="resume-card ${hasResume ? 'done' : ''}" id="resumeCard">
+      <div class="resume-main">
+        <div class="resume-info">
+          <div class="resume-title">
+            <span>📄</span>
+            <b>${hasResume ? "Tailored One-Page Resume Ready" : "Tailor a Resume for This Role"}</b>
+          </div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px">
+            ${hasResume
+              ? "One-page PDF in the G Anastacio design system built from verified facts."
+              : "Generate a print-ready, one-page PDF matching G's verified fact base to this job description."}
+          </div>
+          ${resumeNotes.length
+            ? `<div class="resume-meta">${resumeNotes.map(note => `<div>${note}</div>`).join("")}</div>`
+            : ""}
+        </div>
+        <div class="resume-actions">
+          ${hasResume
+            ? `<a class="primary resume-btn" href="${v.resume.pdf_url}" target="_blank">View PDF</a>
+               ${v.resume.selection_url ? `<a class="linkish" href="${v.resume.selection_url}" target="_blank" style="margin-left:8px;font-size:12.5px">Selection</a>` : ""}
+               <button class="linkish" id="toggleResumeOptions" style="margin-left:12px;font-size:12.5px">Options</button>`
+            : `<button class="primary resume-btn" id="genResumeBtn">Generate Resume</button>
+               <button class="linkish" id="toggleResumeOptions" style="margin-left:10px;font-size:12.5px">Options</button>`}
+        </div>
+      </div>
+      <div class="resume-options-panel" id="resumeOptionsPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;align-items:start">
+          <div>
+            <label style="display:block;font-size:11.5px;color:var(--tx-3);margin-bottom:3px;font-weight:600">Company</label>
+            <input id="resumeCompanyInput" class="resume-input" value="${esc(comp)}" placeholder="e.g. CAKE.com">
+          </div>
+          <div>
+            <label style="display:block;font-size:11.5px;color:var(--tx-3);margin-bottom:3px;font-weight:600">Truthful Role Line</label>
+            <select id="resumeRoleLineSelect" class="resume-input">
+              <option value="AI Solutions Engineer - RAG Pipelines, AI Automation & Data-Grounded Systems">AI Solutions Engineer - RAG Pipelines, AI Automation & Data-Grounded Systems</option>
+              <option value="AI Systems Engineer - Production Reliability & Observability">AI Systems Engineer - Production Reliability & Observability</option>
+              <option value="AI, automation & business systems">AI, automation & business systems</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+          <button class="primary" id="genResumeOptBtn" style="padding:6px 14px;font-size:12.5px">Build Resume PDF</button>
+          <span id="resumeStatusMsg" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function submitGenerateResume(btn) {
+  const status = $("#resumeStatusMsg");
+  const comp = ($("#resumeCompanyInput") ? $("#resumeCompanyInput").value : "").trim();
+  const role = ($("#resumeRoleLineSelect") ? $("#resumeRoleLineSelect").value : "").trim();
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = "Generating...";
+  if (status) { status.textContent = "Selecting blocks and rendering 1-page PDF..."; status.className = "muted"; }
+
+  const { ok, data } = await postJSON("/api/resume/generate", {
+    run: state.current,
+    company: comp,
+    role_line: role,
+  });
+
+  if (!ok) {
+    if (status) { status.textContent = "Error: " + (data.error || "Failed to generate resume"); status.className = "error"; }
+    btn.disabled = false;
+    btn.textContent = origText;
+    return;
+  }
+
+  await openRun(state.current);
+}
+
 function renderRun(v) {
   const task = TASKS[v.task] || { label: v.task };
   const names = v.answers.map(a => a.name);
@@ -301,6 +389,8 @@ function renderRun(v) {
       <h1>${esc(v.title || task.label)}</h1>
       ${v.input ? `<details class="input-view"><summary>Show what was pasted</summary><pre>${esc(v.input)}</pre></details>` : ""}
     </header>
+
+    ${v.task === "job-fit" ? renderResumeSection(v) : ""}
 
     ${sus.length ? `<div class="banner bad"><b>Hidden instructions for AIs found in the input</b>
       ${sus.map(a => cap(a.name)).join(" and ")} flagged ${sus.length > 1 ? "them" : "it"} and did not follow ${sus.length > 1 ? "them" : "it"}. Treat the post with suspicion.
@@ -480,6 +570,11 @@ document.addEventListener("click", e => {
   else if (t.id === "settingsBtn") { location.hash = "#settings"; }
   else if (t.dataset.test) testModel(t);
   else if (t.dataset.save) saveProfile(t);
+  else if (t.id === "genResumeBtn" || t.id === "genResumeOptBtn") submitGenerateResume(t);
+  else if (t.id === "toggleResumeOptions") {
+    const p = $("#resumeOptionsPanel");
+    if (p) p.style.display = p.style.display === "none" ? "block" : "none";
+  }
   else if (t.id === "askBtn") submitAsk();
   else if (t.id === "sendBtn") submitFollowup();
   else if (t.id === "themeBtn") cycleTheme();

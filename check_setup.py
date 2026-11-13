@@ -24,6 +24,9 @@ HERE = Path(__file__).resolve().parent
 HINTS = {
     "claude": "Install Claude Code:  npm install -g @anthropic-ai/claude-code\n"
               "         then run  claude  once and sign in with your Claude account.",
+    "agy-claude": "Install Antigravity CLI from https://antigravity.google/download\n"
+                  "         (Windows PowerShell:  irm https://antigravity.google/cli/install.ps1 | iex)\n"
+                  "         then run  agy  once and sign in with your account.",
     "gemini": "Install Antigravity CLI from https://antigravity.google/download\n"
               "         (Windows PowerShell:  irm https://antigravity.google/cli/install.ps1 | iex)\n"
               "         then run  agy  once and sign in with your Google account.",

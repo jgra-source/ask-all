@@ -32,11 +32,20 @@ command = ["claude", "-p", "--tools", "", "--strict-mcp-config", "--settings", "
 # Group: Gemini, through Antigravity CLI (agy), on your Google sign-in, free tier.
 # (Gemini CLI was dropped: Google stopped serving free users there on 2026-06-18.)
 # agy ignores plain piped text, so adapters/agy.py translates; see that file.
-# Model ids: run `agy models`. Pro is the strongest Gemini listed.
+# Model ids: run `agy models`. Flash High is the strongest Gemini listed.
+# Fallback: if Gemini quota is exhausted, automatically redirects to Antigravity's Claude allocation.
 [[model]]
 name = "gemini"
 enabled = true
-command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "gemini-3.1-pro-high"]
+command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "gemini-3.8-flash-high", "--fallback", "claude-sonnet-4-6"]
+
+# Group: Claude through Antigravity CLI (agy, uses your Antigravity Claude allocation)
+# Can be used directly or as an alternative when Claude Code CLI hits its weekly limit.
+[[model]]
+name = "agy-claude"
+enabled = true
+command = ["{PYTHON}", "{HERE}/adapters/agy.py", "--model", "claude-sonnet-4-6"]
+note = "Claude Sonnet 4.6 via Antigravity CLI (uses your Antigravity allocation)."
 
 # Group: examples you can switch on later (enabled = false: NOT tested on this machine)
 # Codex (OpenAI Codex CLI), on your ChatGPT sign-in; a free ChatGPT account works, with

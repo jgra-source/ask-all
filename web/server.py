@@ -282,16 +282,90 @@ def run_view(name):
     thread_file = run_dir / "thread.json"
     thread = json.loads(thread_file.read_text(encoding="utf-8")) if thread_file.exists() else []
     inp = run_dir / "input.txt"
+    resume_file = run_dir / "resume.pdf"
+    resume_info = None
+    resume_metadata = state.get("resume") if isinstance(state.get("resume"), dict) else {}
+    if state.get("task") == "job-fit" and resume_file.exists():
+        resume_info = {
+            "has_resume": True,
+            "pdf_url": f"/runs/{name}/resume.pdf",
+            "selection_url": f"/runs/{name}/resume.selection.json" if (run_dir / "resume.selection.json").exists() else None,
+            "selection_source": resume_metadata.get("selection_source"),
+            "downloads_filename": resume_metadata.get("downloads_filename"),
+            "warnings": resume_metadata.get("warnings", []),
+        }
+
+    inp_text = inp.read_text(encoding="utf-8", errors="replace") if inp.exists() else ""
+    suggested_company = ""
+    if state.get("task") == "job-fit":
+        from integrations.resume import detect_company
+        suggested_company = detect_company(inp_text)
+
     return {
         "name": name, "task": state["task"], "source": state.get("source", ""),
         "title": run_title(run_dir),
-        "input": inp.read_text(encoding="utf-8", errors="replace")[:20000] if inp.exists() else None,
+        "input": inp_text[:20000] if inp_text else None,
+        "resume": resume_info,
+        "suggested_company": suggested_company,
         "answers": [parse_answer(r) for r in state["results"]],
         "compare": parse_compare(state.get("comparison")),
         "thread": [{"question": t["question"], "asked": t.get("asked", ""),
                     "answers": [{"name": r["name"], "status": r["status"], "secs": r.get("secs", 0),
                                  "text": r.get("text", "")} for r in t["results"]]}
                    for t in thread],
+    }
+
+
+# Block: generate a tailored 1-page PDF resume for an existing run
+def handle_generate_resume(body):
+    if not isinstance(body, dict):
+        raise ValueError("JSON object required")
+    run_name = body.get("run")
+    if not run_name or not RUN_NAME.match(run_name):
+        raise ValueError("valid run name is required")
+    run_dir = RUNS / run_name
+    if not run_dir.is_dir():
+        raise ValueError("run folder not found")
+    state_file = run_dir / "results.json"
+    if not state_file.is_file():
+        raise ValueError("run results not found")
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    if not isinstance(state, dict) or state.get("task") != "job-fit":
+        raise ValueError("resume generation is available only for job-fit runs")
+
+    from integrations.resume import ResumeGenerationError, generate_resume_for_run
+
+    company = body.get("company")
+    role_line = body.get("role_line")
+    selection = body.get("selection")
+    try:
+        res = generate_resume_for_run(run_dir, company=company, role_line=role_line, selection=selection)
+    except ResumeGenerationError as exc:
+        raise RuntimeError(f"Resume generation failed: {exc}") from exc
+
+    # Re-render report.html so the resume link appears in the classic report
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    warnings = list(res.get("warnings", []))
+    thread_file = run_dir / "thread.json"
+    thread = json.loads(thread_file.read_text(encoding="utf-8")) if thread_file.exists() else []
+    try:
+        ask_all.write_report(run_dir / "report.html", state["task"], state["results"],
+                             state.get("comparison"), state.get("source", ""), thread)
+    except (KeyError, OSError, ValueError) as exc:
+        warnings.append(f"PDF generated, but the classic report could not be refreshed: {exc}")
+        state["resume"]["warnings"] = warnings
+        state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+    return {
+        "ok": True,
+        "run": run_name,
+        "company": res["company"],
+        "role_line": res["role_line"],
+        "pdf_url": f"/runs/{run_name}/resume.pdf",
+        "selection_url": f"/runs/{run_name}/resume.selection.json",
+        "downloads_filename": res.get("downloads_filename"),
+        "selection_source": res.get("selection_source"),
+        "warnings": warnings,
     }
 
 
@@ -463,12 +537,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(404, {"error": "no such job (was the server restarted?)"})
             job["elapsed"] = round(time.time() - job["started"])
             return self._send(200, job)
-        # only real run folders, only report.html: no way to read other files on the PC
-        m = re.fullmatch(r"/runs/([^/]+)/report\.html", path)
+        # only real run folders: report.html, resume.pdf, resume.selection.json
+        m = re.fullmatch(r"/runs/([^/]+)/(report\.html|resume\.pdf|resume\.selection\.json)", path)
         if m and RUN_NAME.match(m.group(1)):
-            f = RUNS / m.group(1) / "report.html"
+            fname = m.group(2)
+            f = RUNS / m.group(1) / fname
             if f.exists():
-                return self._send(200, f.read_bytes(), "text/html")
+                ctype = "text/html" if fname.endswith(".html") else ("application/pdf" if fname.endswith(".pdf") else "application/json")
+                return self._send(200, f.read_bytes(), ctype)
         return self._send(404, {"error": "not found"})
 
     # Block: start a run or a follow-up, or change a setting. JSON only: a cross-site form
@@ -477,17 +553,27 @@ class Handler(BaseHTTPRequestHandler):
         starters = {"/api/ask": start_job, "/api/followup": start_followup}
         settings = {"/api/settings/model": set_model, "/api/settings/test": test_model,
                     "/api/settings/profile": save_profile}
-        if not self._allowed() or self.path not in {**starters, **settings}:
+        actions = {"/api/resume/generate": handle_generate_resume}
+        allowed = {**starters, **settings, **actions}
+        if not self._allowed() or self.path not in allowed:
             return self._send(403, {"error": "forbidden"})
         if "application/json" not in (self.headers.get("Content-Type") or ""):
             return self._send(415, {"error": "JSON only"})
         try:
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
+            if not isinstance(body, dict):
+                return self._send(400, {"error": "JSON object required"})
             if self.path in starters:
                 return self._send(200, {"id": starters[self.path](body)})
+            if self.path in actions:
+                return self._send(200, actions[self.path](body))
             return self._send(200, settings[self.path](body))
         except (ValueError, json.JSONDecodeError) as e:
             return self._send(400, {"error": str(e)})
+        except RuntimeError as e:
+            return self._send(422 if self.path == "/api/resume/generate" else 500, {"error": str(e)})
+        except OSError as e:
+            return self._send(500, {"error": str(e)})
 
     # Block: keep per-request noise out of the log; polling would flood it
     def log_message(self, fmt, *args):

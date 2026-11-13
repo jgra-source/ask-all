@@ -97,6 +97,13 @@ def test_dry_run_sends_nothing(tmp_path):
     assert not any(tmp_path.iterdir())
 
 
+def test_resume_flag_is_limited_to_job_fit(tmp_path):
+    code, out = run(["job-post", "--resume"], "Need an n8n expert.", tmp_path)
+    assert code != 0
+    assert "--resume is available only for job-fit runs" in out
+    assert not any(tmp_path.iterdir())
+
+
 # Block: a fresh copy (no profile/ folder) falls back to the example, and says so
 def test_fresh_copy_uses_the_example_profile(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("ASK_ALL_PROFILE", raising=False)

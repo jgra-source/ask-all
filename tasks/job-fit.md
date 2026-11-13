@@ -47,6 +47,16 @@ Write "None seen" if there are none.
 
 ## Open questions
 
+## Resume suggestions
+When the verdict is Apply or Apply after fixing gaps, recommend what G should put on a tailored 1-page resume for this specific role, citing ONLY facts from the verified fact base:
+- **Role line**: Truthful title to display (pick one from identity.role_line_options).
+- **Target company**: Employer name.
+- **Summary facts**: 1 or 2 summary-fact IDs from the fact base, in priority order. Do not write summary prose.
+- **Top skills**: 4 to 6 skill IDs from the fact base in priority order (e.g. sk-ai, sk-automation, sk-backend, sk-ship).
+- **Featured projects**: 2 or 3 project IDs from the fact base that provide the strongest evidence for this role, with one sentence on why each was chosen.
+- **Key experience bullets**: Which bullet IDs to lead with under independent work, Concentrix (exp-cnx), and HPE (exp-hpe).
+- **Selection JSON**: A valid ```json ``` block with company, role_line, summary_facts, skills, projects, and experience keys. Use IDs only for content; include every employment entry with only its own bullet IDs. Do not select blocks with a `note`, and do not include summary prose or overrides. The builder reconstructs summary text from canonical facts and ignores model-written copy.
+
 @include _guard.md
 
 ## About the person
