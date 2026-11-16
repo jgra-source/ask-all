@@ -84,7 +84,8 @@ def test_resume_generation_rejects_non_job_fit_run(port, tmp_path, monkeypatch):
 
 
 def test_resume_generation_serves_only_run_artifacts(port, tmp_path, monkeypatch):
-    import integrations.resume as resume
+    # Skip when the git-excluded integrations/resume.py is absent (GitHub CI has no copy).
+    resume = pytest.importorskip("integrations.resume")
 
     monkeypatch.setattr(server, "RUNS", tmp_path)
     run_dir = tmp_path / "20261111-120000-job-fit"

@@ -8,6 +8,10 @@ import json
 import sys
 import pytest
 from pathlib import Path
+
+# Skip this whole file when integrations/resume.py is absent. That module is kept
+# local on purpose (git-excluded), so GitHub CI has no copy and would fail at import.
+pytest.importorskip("integrations.resume")
 import integrations.resume as resume
 from integrations.resume import (
     ResumeGenerationError,
