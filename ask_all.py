@@ -313,7 +313,7 @@ def write_report(path, task, results, comparison, source, thread=()):
     resume_banner = ""
     resume_file = path.parent / "resume.pdf"
     if resume_file.exists():
-        sel_link = f' · <a href="resume.selection.json" target="_blank" style="color:var(--muted); font-size:12px;">Selection JSON</a>' if (path.parent / "resume.selection.json").exists() else ""
+        sel_link = ' · <a href="resume.selection.json" target="_blank" style="color:var(--muted); font-size:12px;">Selection JSON</a>' if (path.parent / "resume.selection.json").exists() else ""
         resume_banner = (
             f'<section class="card resume" style="border-left:4px solid var(--accent); background:#f0f6fc; margin-bottom:14px; padding:12px 16px;">'
             f'<p style="margin:0; font-weight:600;">📄 Tailored 1-Page Resume: '
