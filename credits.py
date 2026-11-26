@@ -37,10 +37,9 @@ def format_remaining_time(seconds: float) -> str:
     mins = total_mins % 60
     if hours > 0 and mins > 0:
         return f"{hours}h {mins}m"
-    elif hours > 0:
+    if hours > 0:
         return f"{hours}h"
-    else:
-        return f"{mins}m"
+    return f"{mins}m"
 
 
 def load_quota_cache() -> dict:
@@ -295,9 +294,9 @@ def get_antigravity_credits(model_name: str) -> dict:
 def get_model_credits(model_name: str) -> dict:
     if model_name == "claude":
         return get_claude_credits()
-    elif model_name in ("gemini", "agy-claude"):
+    if model_name in ("gemini", "agy-claude"):
         return get_antigravity_credits(model_name)
-    elif model_name == "codex":
+    if model_name == "codex":
         return {
             "pill": "Free allowance",
             "badge": "Free allowance",
@@ -305,7 +304,7 @@ def get_model_credits(model_name: str) -> dict:
             "tone": "none",
             "quota_exhausted": False,
         }
-    elif model_name == "local-llama":
+    if model_name == "local-llama":
         return {
             "pill": "Local (Free)",
             "badge": "Local model",
@@ -313,14 +312,13 @@ def get_model_credits(model_name: str) -> dict:
             "tone": "good",
             "quota_exhausted": False,
         }
-    else:
-        return {
-            "pill": "Standard",
-            "badge": "Active",
-            "detail": "Model configured in models.toml",
-            "tone": "none",
-            "quota_exhausted": False,
-        }
+    return {
+        "pill": "Standard",
+        "badge": "Active",
+        "detail": "Model configured in models.toml",
+        "tone": "none",
+        "quota_exhausted": False,
+    }
 
 
 def get_all_credits(models=None) -> dict:
