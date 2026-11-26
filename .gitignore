@@ -15,6 +15,7 @@ settings.local.tmp
 # Local state and logs
 web/server.log
 adapters/.agy-last-update
+adapters/.agy-quota.json
 
 # Python and test clutter
 __pycache__/

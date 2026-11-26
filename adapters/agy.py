@@ -157,6 +157,12 @@ def main():
         r = run_turn(agy, model_id, line_bytes)
         ok, answer, tools_used, err = extract_result(r)
         if ok and answer:
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+                import credits
+                credits.record_model_quota_event(model_id or "gemini", "ok")
+            except Exception:
+                pass
             if idx > 0:
                 primary = models_to_try[0] or "default model"
                 sys.stderr.write(f"agy: model '{primary}' failed ({last_error}); redirected to '{model_id}'.\n")
@@ -169,6 +175,13 @@ def main():
             return
 
         last_error = err or "unknown error"
+        if "quota" in last_error.lower() or is_fallback_eligible(last_error):
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+                import credits
+                credits.record_model_quota_event(model_id or "gemini", "exhausted", last_error)
+            except Exception:
+                pass
         if idx + 1 < len(models_to_try):
             if is_fallback_eligible(last_error):
                 sys.stderr.write(f"agy: model '{model_id}' failed ({last_error}); attempting fallback '{models_to_try[idx+1]}'...\n")
