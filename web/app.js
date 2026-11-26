@@ -168,7 +168,11 @@ function showComposer() {
         <input class="field" id="against" value="HEAD" title="HEAD = changes not committed yet. main = a whole branch." style="width:150px">
       </div>
       <div class="bar">
-        ${state.options.models.map(m => `<button class="pill" data-model="${m}" aria-pressed="${state.models.has(m)}"><span class="dot ${m}"></span>${cap(m)}</button>`).join("")}
+        ${state.options.models.map(m => {
+          const cred = state.options.credits?.[m];
+          const pillCred = cred?.pill ? `<span class="pill-cred ${cred.tone || ''}">${esc(cred.pill)}</span>` : '';
+          return `<button class="pill" data-model="${m}" aria-pressed="${state.models.has(m)}" title="${cred?.detail ? esc(cred.detail) : ''}"><span class="dot ${m}"></span>${cap(m)}${pillCred}</button>`;
+        }).join("")}
         <span class="spacer"></span>
         <span class="error" id="err"></span>
         <span class="muted" style="font-size:12px"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
@@ -488,13 +492,17 @@ async function showSettings() {
 // Block: one model: status chip, Test, on/off switch, and the install steps when it's missing
 function modelRow(m) {
   const [tone, label] = !m.installed ? ["bad", "Not installed"] : m.enabled ? ["good", "On"] : ["none", "Off"];
+  const cred = m.credits;
   return `<div class="mrow">
     <div class="mhead"><span class="dot ${m.name}"></span><b>${cap(m.name)}</b>
-      <span class="chip-status ${tone}">${label}</span><span class="spacer"></span>
+      <span class="chip-status ${tone}">${label}</span>
+      ${cred?.badge ? `<span class="chip-status cred-badge ${cred.tone || 'none'}">${esc(cred.badge)}</span>` : ""}
+      <span class="spacer"></span>
       <button class="linkish" data-test="${m.name}" ${m.installed ? "" : "disabled"}>Test</button>
       <label class="switch" title="${m.enabled ? "On: answers every question" : "Off"}">
         <input type="checkbox" data-toggle="${m.name}" ${m.enabled ? "checked" : ""}><span></span></label>
     </div>
+    ${cred?.detail ? `<div class="mcred ${cred.tone || ''}"><span class="mcred-icon">ℹ</span> ${esc(cred.detail)}</div>` : ""}
     ${m.note ? `<p class="hint">${esc(m.note)}</p>` : ""}
     ${!m.installed ? `<pre class="fix">${esc(m.hint)}</pre>` : ""}
     <div class="mtest" id="test-${m.name}"></div>

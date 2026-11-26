@@ -131,6 +131,10 @@ a { color: var(--green-lift); }
 .pill[aria-pressed="true"] { color: var(--tx-1); border-color: var(--tx-3); background: var(--surf-2); }
 .pill .dot, .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tx-3); display: inline-block; flex: none; }
 .dot.claude, .dot.agy-claude { background: var(--claude); } .dot.gemini { background: var(--gemini); } .dot.codex { background: var(--codex); }
+.pill-cred { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--surf-3); color: var(--tx-2); }
+.pill-cred.good { background: var(--green-soft); color: var(--green-lift); }
+.pill-cred.bad { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+.pill-cred.warn { background: var(--warn-soft); color: var(--warn); }
 .primary { padding: 10px 22px; border-radius: var(--radius-sm); background: var(--green); color: var(--on-green); font-weight: 700; }
 .primary:hover { filter: brightness(1.08); }
 .primary:disabled { opacity: .5; cursor: wait; }

@@ -42,6 +42,7 @@ ROOT = WEB.parent                       # the ask-all folder
 sys.path.insert(0, str(ROOT))
 import ask_all       # noqa: E402  (config with this machine's choices, run_model for Test)
 import check_setup   # noqa: E402  (is a model's program installed, and how to fix it)
+import credits       # noqa: E402  (remaining credits, plan tiers, and quota status)
 RUNS = ROOT / "runs"
 HOST, PORT = "127.0.0.1", 8770          # 8765/8766 are taken by other preview configs
 URL = f"http://{HOST}:{PORT}/"
@@ -73,11 +74,12 @@ def log(msg):
 
 
 # Block: what the page can offer: the allowed tasks that exist in tasks/, enabled models
-# (models.toml plus this machine's on/off choices from Settings)
+# (models.toml plus this machine's on/off choices from Settings), plus remaining credits/quota
 def options():
     tasks = [t for t in PAGE_TASKS if (ROOT / "tasks" / f"{t}.md").exists()]
-    models = [m["name"] for m in ask_all.load_config().get("model", []) if m.get("enabled", True)]
-    return {"tasks": tasks, "models": models}
+    enabled_models = [m["name"] for m in ask_all.load_config().get("model", []) if m.get("enabled", True)]
+    credits_data = credits.get_all_credits(enabled_models)
+    return {"tasks": tasks, "models": enabled_models, "credits": credits_data}
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +113,13 @@ def find_model(name):
 # Block: everything the Settings view shows. A profile file that is only an "@include"
 # line points at a file kept elsewhere; the page says so instead of hiding it.
 def settings_view():
+    all_models = ask_all.load_config().get("model", [])
+    model_names = [m["name"] for m in all_models]
+    credits_data = credits.get_all_credits(model_names)
     models = [{"name": m["name"], "enabled": m.get("enabled", True), "installed": check_setup.is_installed(m),
-               "tool": check_setup.tool_for(m), "hint": check_setup.hint_for(m), "note": m.get("note", "")}
-              for m in ask_all.load_config().get("model", [])]
+               "tool": check_setup.tool_for(m), "hint": check_setup.hint_for(m), "note": m.get("note", ""),
+               "credits": credits_data.get(m["name"])}
+              for m in all_models]
     target = profile_target()
     using = target if target.is_dir() else ROOT / "profile.example"
     files = []
@@ -152,6 +158,11 @@ def test_model(body):
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     passed = r["status"] == "ok" and "OK" in r["text"].upper()
+    if model["name"] in ("gemini", "agy-claude"):
+        if passed:
+            credits.record_model_quota_event(model["name"], "ok")
+        elif "quota" in r.get("text", "").lower():
+            credits.record_model_quota_event(model["name"], "exhausted", r.get("text", ""))
     log(f"settings: test {model['name']} -> {r['status']} {r['secs']}s")
     return {"status": "ok" if passed else ("odd" if r["status"] == "ok" else r["status"]),
             "secs": r["secs"], "text": r["text"].strip()[-400:]}
